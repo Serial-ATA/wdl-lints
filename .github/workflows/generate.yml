@@ -1,0 +1,36 @@
+name: Generate lint list
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/checkout@v4
+        with:
+          # TODO: switch repos once sprocket explain --format=json is merged
+          repository: "Serial-ATA/sprocket"
+          ref: "lint-site"
+          path: "sprocket"
+          fetch-depth: 0
+      - name: Update Rust
+        run: rustup update stable && rustup default stable
+      - uses: actions/setup-node@v4
+      - name: Generate site
+        run: |
+          # Since the generator looks for ../sprocket
+          mv sprocket ../sprocket
+          cargo run -p wdl-lint-site-generator
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: dist
+          branch: gh-pages
+          clean: true
