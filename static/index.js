@@ -12,6 +12,7 @@ Alpine.data('App', () => ({
     tab: urlParams.get('tab') || state.defaultTab,
     search: Alpine.$persist('').using(sessionStorage),
     wdlLint: {
+        tags: state.defaultTags,
         activeTags: state.defaultTags,
         allLints: state.wdlLint.allLints,
         version: state.wdlLint.currentVersion,

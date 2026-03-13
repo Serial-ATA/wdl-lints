@@ -9,14 +9,17 @@
     .accordion-check {
         display: none;
     }
+
     .accordion-content {
         display: grid;
         grid-template-rows: 0fr;
         transition: grid-template-rows 0.2s ease-out;
     }
+
     input:checked + label + .accordion-content {
         grid-template-rows: 1fr;
     }
+
     .min-h-0 {
         min-height: 0;
     }
@@ -52,7 +55,7 @@
         font-size: 14px;
         text-align: left;
         list-style: none;
-        box-shadow: 0 6px 12px rgba(0,0,0,.175);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, .175);
     }
 
     .dropdown-menu .divider {
@@ -67,6 +70,7 @@
         white-space: nowrap;
         margin: 0;
     }
+
     .dropdown-menu .checkbox label {
         padding: 3px 20px;
         width: 100%;
@@ -82,8 +86,9 @@
         position: relative;
         display: block;
         margin-bottom: -1px;
-        background: 0%;
+        background: 0;
     }
+
     .rule-description > h3 {
         border-top: 1px solid var(--color-slate-800);
         padding: calc(var(--spacing) * 4) 15px;
@@ -91,20 +96,39 @@
         font-size: 18px;
         @apply py-4 px-3.75;
     }
+
     .rule-description > h3:first-child {
         border-top: none;
-        padding-top: 0px;
+        padding-top: 0;
     }
+
+    .rule-configuration > h3 {
+        border-top: 1px solid var(--color-slate-800);
+        padding: calc(var(--spacing) * 4) 15px;
+        margin: 0 -20px;
+        font-size: 18px;
+        padding-bottom: 0;
+        @apply mt-2;
+    }
+    .rule-configuration > h5 {
+        padding: calc(var(--spacing) * 2) 15px;
+        margin: 0 -20px;
+        font-size: 16px;
+    }
+
     .rule-description > ul {
         list-style: initial;
     }
+
     .rule-description > ol {
         list-style: decimal;
     }
+
     .rule-description p {
         margin-top: revert;
         margin-bottom: revert;
     }
+
     .rule-description ul,
     .rule-description ol {
         margin-block-start: revert;
@@ -114,6 +138,7 @@
         padding-inline-start: revert;
         padding-left: revert;
     }
+
     .rule-extras > div {
         padding: 9px 5px 5px 15px;
     }
@@ -125,7 +150,7 @@
     body {
         background: var(--color-slate-950);
         color: var(--color-slate-300);
-        font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
         font-size: 14px;
         line-height: 1.42857143;
         margin: 0;

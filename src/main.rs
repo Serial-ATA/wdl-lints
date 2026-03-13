@@ -7,6 +7,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 
+use anyhow::Context;
 use anyhow::bail;
 use pulldown_cmark::Options;
 use pulldown_cmark::Parser;
@@ -58,6 +59,12 @@ pub struct ConfigField {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct Tag {
+    pub name: String,
+    pub applicable_lints: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct Rule {
     pub source: LintSource,
     pub id: String,
@@ -98,17 +105,20 @@ impl Rule {
         }
 
         if let Some(config_fields) = self.config.as_ref() {
+            writeln!(&mut markdown, "<div class=\"rule-configuration\">").unwrap();
+            writeln!(&mut markdown).unwrap();
             writeln!(&mut markdown, "### Configuration").unwrap();
             for field in config_fields {
                 writeln!(
                     &mut markdown,
-                    "#### `{}` (Default: `{}`)",
+                    "`{}` (Default: `{}`)",
                     field.name, field.default
                 )
                 .unwrap();
                 writeln!(&mut markdown).unwrap();
                 writeln!(&mut markdown, "{}", field.description).unwrap();
             }
+            writeln!(&mut markdown, "</div>").unwrap();
         }
 
         let mut options = Options::empty();
@@ -163,7 +173,10 @@ fn all_tags(sprocket_dir: &Path) -> anyhow::Result<Vec<String>> {
         bail!("failed to run sprocket");
     }
 
-    serde_json::from_slice::<Vec<String>>(&output.stdout).map_err(Into::into)
+    match serde_json::from_slice::<Vec<Tag>>(&output.stdout) {
+        Ok(tags) => Ok(tags.into_iter().map(|t| t.name).collect()),
+        Err(e) => Err(e.into()),
+    }
 }
 
 fn all_rules(sprocket_dir: &Path) -> anyhow::Result<Vec<Rule>> {
@@ -201,12 +214,17 @@ fn latest_version_of(crate_name: &str, sprocket_dir: &Path) -> anyhow::Result<St
         bail!("failed to determine latest version of `{crate_name}`");
     }
 
-    output
+    let tag = output
         .stdout
         .lines()
         .next()
         .transpose()?
-        .ok_or_else(|| anyhow::anyhow!("no versions of `{crate_name}` found"))
+        .ok_or_else(|| anyhow::anyhow!("no versions of `{crate_name}` found"))?;
+
+    Ok(tag
+        .strip_prefix(&format!("{crate_name}-"))
+        .map(ToString::to_string)
+        .expect("tag should contain name"))
 }
 
 /// The main program logic.
@@ -233,10 +251,15 @@ fn real_main() -> anyhow::Result<()> {
 }
 
 /// Gets the `web-common` dir at the root of the project.
-fn web_common_dir(sprocket_dir: &Path) -> PathBuf {
+fn web_common_dir(sprocket_dir: &Path) -> std::io::Result<PathBuf> {
     let web_common_dir = sprocket_dir.join("web-common");
-    assert!(web_common_dir.is_dir());
-    web_common_dir
+    if !web_common_dir.exists() {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::NotADirectory,
+            web_common_dir.to_string_lossy(),
+        ));
+    }
+    Ok(web_common_dir)
 }
 
 /// Gets the `static` dir
@@ -259,8 +282,8 @@ fn static_dir() -> std::io::Result<PathBuf> {
 /// Generates the default state (all lints, the current version, etc.), and
 /// dumps it into [`static_dir()`].
 fn dump_default_state_json(sprocket_dir: &Path) -> anyhow::Result<()> {
-    let rules = all_rules(sprocket_dir)?;
-    let default_tags = all_tags(sprocket_dir)?;
+    let rules = all_rules(sprocket_dir).context("failed to generate rule list")?;
+    let default_tags = all_tags(sprocket_dir).context("failed to generate tag list")?;
 
     let mut all_lints = rules
         .iter()
@@ -302,11 +325,9 @@ fn compile_external(sprocket_dir: &Path) -> std::io::Result<()> {
             .current_dir(dir)
             .output()?;
         if !output.status.success() {
-            tracing::error!(
-                "Failed to run `npm install`: {}",
-                String::from_utf8_lossy(&output.stderr)
-            );
-            std::process::exit(output.status.code().unwrap_or(1));
+            let err = String::from_utf8_lossy(&output.stderr);
+            tracing::error!("Failed to run `npm install`: {err}");
+            return Err(std::io::Error::other(err));
         }
 
         Ok(())
@@ -320,17 +341,15 @@ fn compile_external(sprocket_dir: &Path) -> std::io::Result<()> {
             .current_dir(dir)
             .output()?;
         if !output.status.success() {
-            tracing::error!(
-                "Failed to run `npm run build`: {}",
-                String::from_utf8_lossy(&output.stderr)
-            );
-            std::process::exit(output.status.code().unwrap_or(1));
+            let err = String::from_utf8_lossy(&output.stderr);
+            tracing::error!("Failed to run `npm run build`: {err}",);
+            return Err(std::io::Error::other(err));
         }
 
         Ok(())
     }
 
-    npm_install(web_common_dir(sprocket_dir))?;
+    npm_install(web_common_dir(sprocket_dir)?)?;
     npm_install(env!("CARGO_MANIFEST_DIR"))?;
 
     tracing::info!("Generating CSS via tailwind");
@@ -339,14 +358,12 @@ fn compile_external(sprocket_dir: &Path) -> std::io::Result<()> {
         .current_dir(env!("CARGO_MANIFEST_DIR"))
         .output()?;
     if !output.status.success() {
-        tracing::error!(
-            "Failed to run `npm run dist`: {}",
-            String::from_utf8_lossy(&output.stderr)
-        );
-        std::process::exit(output.status.code().unwrap_or(1));
+        let err = String::from_utf8_lossy(&output.stderr);
+        tracing::error!("Failed to run `npm run dist`: {err}",);
+        return Err(std::io::Error::other(err));
     }
 
-    build_js(web_common_dir(sprocket_dir))?;
+    build_js(web_common_dir(sprocket_dir)?)?;
     build_js(env!("CARGO_MANIFEST_DIR"))?;
 
     Ok(())
@@ -384,7 +401,7 @@ fn copy_files_to_dist(dist_dir: &Path, sprocket_dir: &Path) -> std::io::Result<(
 
     let static_dir = static_dir()?;
 
-    let web_common_dist_dir = web_common_dir(sprocket_dir).join("dist");
+    let web_common_dist_dir = web_common_dir(sprocket_dir)?.join("dist");
     if !web_common_dist_dir.is_dir() {
         tracing::error!(
             "Couldn't find web-common/dist, searched `{}`",

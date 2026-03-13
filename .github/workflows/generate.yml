@@ -23,6 +23,8 @@ jobs:
       - name: Update Rust
         run: rustup update stable && rustup default stable
       - uses: actions/setup-node@v4
+        with:
+          node-version: 24
       - name: Generate site
         run: |
           # Since the generator looks for ../sprocket
