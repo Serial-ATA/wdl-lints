@@ -231,7 +231,7 @@ fn latest_version_of(crate_name: &str, sprocket_dir: &Path) -> anyhow::Result<St
 fn real_main() -> anyhow::Result<()> {
     let sprocket_dir = sprocket_repo_dir();
     if !sprocket_dir.exists() {
-        bail!("Expected sprocket repo at '{}'", sprocket_dir.display());
+        bail!("expected sprocket repo at '{}'", sprocket_dir.display());
     }
 
     let dist_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("dist");
@@ -243,7 +243,7 @@ fn real_main() -> anyhow::Result<()> {
 
     dump_default_state_json(&sprocket_dir)?;
 
-    tracing::info!("Copying static files to `{}`", dist_dir.display());
+    tracing::info!("copying static files to `{}`", dist_dir.display());
     copy_files_to_dist(&dist_dir, &sprocket_dir)?;
     compile_external(&sprocket_dir)?;
 
@@ -319,14 +319,14 @@ fn dump_default_state_json(sprocket_dir: &Path) -> anyhow::Result<()> {
 fn compile_external(sprocket_dir: &Path) -> std::io::Result<()> {
     fn npm_install(dir: impl AsRef<Path>) -> std::io::Result<()> {
         let dir = dir.as_ref();
-        tracing::info!("Running `npm install` in {}", dir.display());
+        tracing::info!("running `npm install` in {}", dir.display());
         let output = Command::new("npm")
             .arg("install")
             .current_dir(dir)
             .output()?;
         if !output.status.success() {
             let err = String::from_utf8_lossy(&output.stderr);
-            tracing::error!("Failed to run `npm install`: {err}");
+            tracing::error!("failed to run `npm install`: {err}");
             return Err(std::io::Error::other(err));
         }
 
@@ -335,14 +335,14 @@ fn compile_external(sprocket_dir: &Path) -> std::io::Result<()> {
 
     fn build_js(dir: impl AsRef<Path>) -> std::io::Result<()> {
         let dir = dir.as_ref();
-        tracing::info!("Compiling JS in `{}`", dir.display());
+        tracing::info!("compiling JS in `{}`", dir.display());
         let output = Command::new("npm")
             .args(["run", "build"])
             .current_dir(dir)
             .output()?;
         if !output.status.success() {
             let err = String::from_utf8_lossy(&output.stderr);
-            tracing::error!("Failed to run `npm run build`: {err}",);
+            tracing::error!("failed to run `npm run build`: {err}",);
             return Err(std::io::Error::other(err));
         }
 
@@ -352,14 +352,14 @@ fn compile_external(sprocket_dir: &Path) -> std::io::Result<()> {
     npm_install(web_common_dir(sprocket_dir)?)?;
     npm_install(env!("CARGO_MANIFEST_DIR"))?;
 
-    tracing::info!("Generating CSS via tailwind");
+    tracing::info!("generating CSS via tailwind");
     let output = Command::new("npm")
         .args(["run", "dist"])
         .current_dir(env!("CARGO_MANIFEST_DIR"))
         .output()?;
     if !output.status.success() {
         let err = String::from_utf8_lossy(&output.stderr);
-        tracing::error!("Failed to run `npm run dist`: {err}",);
+        tracing::error!("failed to run `npm run dist`: {err}",);
         return Err(std::io::Error::other(err));
     }
 
@@ -404,7 +404,7 @@ fn copy_files_to_dist(dist_dir: &Path, sprocket_dir: &Path) -> std::io::Result<(
     let web_common_dist_dir = web_common_dir(sprocket_dir)?.join("dist");
     if !web_common_dist_dir.is_dir() {
         tracing::error!(
-            "Couldn't find web-common/dist, searched `{}`",
+            "couldn't find web-common/dist, searched `{}`",
             web_common_dist_dir.display()
         );
         return Err(std::io::Error::new(
