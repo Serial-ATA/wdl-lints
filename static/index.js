@@ -60,7 +60,7 @@ Alpine.data('App', () => ({
 
         if (lint.id.toLowerCase().includes(query)) return true;
 
-        const lintDocs = (lint.docs || "").toLowerCase();
+        const lintDocs = (lint.description || "").toLowerCase();
         return query.split(" ").every(term => lintDocs.includes(term));
     }
 }));

@@ -145,6 +145,10 @@ impl Rule {
             obj.insert(String::from("tags"), serde_json::to_value(tags).unwrap());
         }
         obj.insert(
+            String::from("description"),
+            serde_json::to_value(&self.description).unwrap(),
+        );
+        obj.insert(
             String::from("descriptionHtml"),
             serde_json::to_value(self.render()).unwrap(),
         );
