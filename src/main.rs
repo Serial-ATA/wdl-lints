@@ -104,7 +104,7 @@ impl Rule {
             writeln!(&mut markdown).unwrap();
         }
 
-        if let Some(config_fields) = self.config.as_ref() {
+        if let Some(config_fields) = self.config.as_ref().filter(|f| !f.is_empty()) {
             writeln!(&mut markdown, "<div class=\"rule-configuration\">").unwrap();
             writeln!(&mut markdown).unwrap();
             writeln!(&mut markdown, "### Configuration").unwrap();
@@ -352,14 +352,14 @@ fn compile_external(sprocket_dir: &Path) -> std::io::Result<()> {
     npm_install(web_common_dir(sprocket_dir)?)?;
     npm_install(env!("CARGO_MANIFEST_DIR"))?;
 
-    tracing::info!("generating CSS via tailwind");
+    tracing::info!("generating CSS via `tailwind`");
     let output = Command::new("npm")
         .args(["run", "dist"])
         .current_dir(env!("CARGO_MANIFEST_DIR"))
         .output()?;
     if !output.status.success() {
         let err = String::from_utf8_lossy(&output.stderr);
-        tracing::error!("failed to run `npm run dist`: {err}",);
+        tracing::error!("failed to run `npm run dist`: {err}");
         return Err(std::io::Error::other(err));
     }
 

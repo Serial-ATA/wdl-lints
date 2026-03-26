@@ -3,8 +3,6 @@
   "version": "1.0.0",
   "description": "Static site generator for wdl-lint.",
   "private": true,
-  "main": "dist/bundle.js",
-  "module": "dist/bundle.js",
   "type": "module",
   "scripts": {
     "dist": "npx @tailwindcss/cli -i ./static/main.css -o dist/style.css",
