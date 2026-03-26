@@ -15,8 +15,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/checkout@v4
         with:
-          # TODO: switch repos once sprocket explain --format=json is merged
-          repository: "Serial-ATA/sprocket"
+          repository: "stjude-rust-labs/sprocket"
           ref: "lint-site"
           path: "sprocket"
           fetch-depth: 0
